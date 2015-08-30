@@ -1,0 +1,42 @@
+<?php
+namespace Noi\Tests;
+
+use Noi\ParsedownRubyText;
+use ParsedownTest;
+
+class ParsedownRubyTextTest extends ParsedownTest
+{
+    protected function initDirs()
+    {
+        $dirs = parent::initDirs();
+
+        $dirs []= dirname(__FILE__).'/data/';
+
+        return $dirs;
+    }
+
+    protected function initParsedown()
+    {
+        $Parsedown = new ParsedownRubyText();
+
+        return $Parsedown;
+    }
+
+    /** @test */
+    public function 指定した括弧を使ってrpタグを出力する_rp用の括弧を変更()
+    {
+        $markdown = '[紫電の槍]^(ライトニングスピア)';
+        $expected = '<ruby>紫電の槍<rp>＜</rp><rt>ライトニングスピア</rt><rp>＞</rp></ruby>';
+
+        $this->parsedown->setRubyTextBrackets('＜', '＞');
+
+        $this->assertEquals($expected, $this->parsedown->line($markdown));
+    }
+
+    public function setUp()
+    {
+        $this->parsedown = $this->initParsedown();
+    }
+
+    protected $parsedown;
+}
