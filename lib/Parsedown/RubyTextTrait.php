@@ -72,6 +72,7 @@ trait RubyTextTrait
 
     private $ruby_text_MonoRubySeparator = ' ';
 
+    private $ruby_text_ExtensionEnabled    = true;
     private $ruby_text_ExtensionRegistered = false;
 
     public function registerRubyTextExtension()
@@ -90,6 +91,10 @@ trait RubyTextTrait
 
     protected function inlineRubyText($Excerpt)
     {
+        if (!$this->isRubyTextEnabled()) {
+            return;
+        }
+
         if (!$this->matchRubyTextMarkdown($Excerpt['text'], $kanji, $furigana, $extent)) {
             return;
         }
@@ -287,6 +292,17 @@ trait RubyTextTrait
     {
         $this->ruby_text_MonoRubySeparator = $separator;
         return $this;
+    }
+
+    public function setRubyTextEnabled($bool)
+    {
+        $this->ruby_text_ExtensionEnabled = $bool;
+        return $this;
+    }
+
+    public function isRubyTextEnabled()
+    {
+        return $this->ruby_text_ExtensionEnabled;
     }
 
     abstract public function line($text);

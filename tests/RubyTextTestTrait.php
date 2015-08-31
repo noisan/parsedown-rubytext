@@ -36,6 +36,17 @@ trait RubyTextTestTrait
         $this->assertEquals($expected, $this->parsedown->line($markdown));
     }
 
+    /** @test */
+    public function ルビ指定を解析しない_Extensionを無効に設定()
+    {
+        $markdown = '[拡張記法無効]^(かくちょうきほうむこう)';
+        $expected = $markdown;
+
+        $this->parsedown->setRubyTextEnabled(false);
+
+        $this->assertEquals($expected, $this->parsedown->line($markdown));
+    }
+
     public function setUp()
     {
         $this->parsedown = $this->initParsedown();
