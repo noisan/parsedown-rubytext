@@ -32,6 +32,8 @@ class ParsedownRubyText extends Parsedown
     private $ruby_text_OpeningBracket = '（';  // 上記の前方の<rp>（</rp>に入る括弧
     private $ruby_text_ClosingBracket = '）';  //       後方の<rp>）</rp>に入る括弧
 
+    private $ruby_text_MonoRubySeparator = ' ';
+
     private $ruby_text_ExtensionRegistered = false;
 
     public function __construct()
@@ -132,14 +134,16 @@ class ParsedownRubyText extends Parsedown
         $ruby = array();
 
         // 熟語へのモノルビ指定に対応するため親文字とルビのペアを複数指定可能にする
-        $ruby[] = array(
-            'base' => $kanji,
-            'rt'   => array(
-                'name'    => 'rt',
-                'handler' => 'line',
-                'text'    => $furigana,
-            ),
-        );
+        foreach ($this->parseRubyText($kanji, $furigana) as $pair) {
+            $ruby[] = array(
+                'base' => $pair[0],
+                'rt'   => array(
+                    'name'    => 'rt',
+                    'handler' => 'line',
+                    'text'    => $pair[1],
+                ),
+            );
+        }
 
         return array(
             'name'    => 'ruby',
@@ -148,6 +152,40 @@ class ParsedownRubyText extends Parsedown
                 'ruby' => $ruby,
             ),
         );
+    }
+
+    /*
+     * return array(
+     *   array('親文字1', '対応するルビ1'),
+     *   array('親文字2', '対応するルビ2'),
+     *   ...
+     * );
+     */
+    protected function parseRubyText($kanji, $furigana)
+    {
+        // ルビが分かち書きされていれば分割する
+        $rubiList = $this->splitRubyText($furigana);
+
+        if (mb_strlen($kanji, 'UTF-8') != count($rubiList)) {
+            /* ルビ分割数と親文字数が異なるならモノルビを
+             * 意図した分かち書きではない可能性が高い。分割せずそのまま返す
+             */
+            return array(array($kanji, $furigana));
+        }
+
+        // ルビの分割数と親文字数が一致すれば各要素を対応付ける
+        return array_map(null, preg_split('//u', $kanji, -1, PREG_SPLIT_NO_EMPTY), $rubiList);
+    }
+
+    protected function splitRubyText($furigana)
+    {
+        $s = $this->getRubyTextSeparator();
+
+        if ($s == '') {
+            return array($furigana);
+        }
+
+        return explode($s, $furigana);
     }
 
     // handler
@@ -205,5 +243,16 @@ class ParsedownRubyText extends Parsedown
     public function getRubyTextBrackets()
     {
         return array($this->getRubyTextOpeningBracket(), $this->getRubyTextClosingBracket());
+    }
+
+    public function getRubyTextSeparator()
+    {
+        return $this->ruby_text_MonoRubySeparator;
+    }
+
+    public function setRubyTextSeparator($separator)
+    {
+        $this->ruby_text_MonoRubySeparator = $separator;
+        return $this;
     }
 }

@@ -33,6 +33,17 @@ class ParsedownRubyTextTest extends ParsedownTest
         $this->assertEquals($expected, $this->parsedown->line($markdown));
     }
 
+    /** @test */
+    public function 指定文字列でルビを分割する_モノルビ用の分割記号を変更()
+    {
+        $markdown = '[東京都]^(とう/きょう/と)';
+        $expected = '<ruby>東<rp>（</rp><rt>とう</rt><rp>）</rp>京<rp>（</rp><rt>きょう</rt><rp>）</rp>都<rp>（</rp><rt>と</rt><rp>）</rp></ruby>';
+
+        $this->parsedown->setRubyTextSeparator('/');
+
+        $this->assertEquals($expected, $this->parsedown->line($markdown));
+    }
+
     public function setUp()
     {
         $this->parsedown = $this->initParsedown();
