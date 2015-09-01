@@ -55,6 +55,16 @@ namespace Noi\Parsedown;
  *   </ruby>
  *   (実際の出力は1行)
  *
+ * ルビには属性値を追加設定することもできます。
+ * Markdown Extra "Special Attributes" の記法と同じ{...}形式です。
+ *
+ * 例:
+ *   // markdown:
+ *   [日本語]^(にほんご){#id .classA .classB lang=ja}
+ *
+ *   // html:
+ *   <ruby id="id" class="classA classB" lang="ja">日本語<rp>（</rp><rt>にほんご</rt><rp>）</rp></ruby>
+ *
  * @see \Noi\ParsedownRubyText
  * @see \Noi\ParsedownExtraRubyText
  *
@@ -99,9 +109,13 @@ trait RubyTextTrait
             return;
         }
 
+        if ($this->matchRubyTextAttributes(substr($Excerpt['text'], $extent), $attributes, $additional)) {
+            $extent += $additional;
+        }
+
         return array(
             'extent'  => $extent,
-            'element' => $this->createRubyTextElement($kanji, $furigana),
+            'element' => $this->createRubyTextElement($kanji, $furigana, $attributes),
         );
     }
 
@@ -167,13 +181,29 @@ trait RubyTextTrait
         return false;
     }
 
-    protected function createRubyTextElement($kanji, $furigana)
+    protected function matchRubyTextAttributes($target, /* out */ &$attributes, /* out */ &$extent)
+    {
+        /* ルビには属性値を追加設定できる:
+         *   [親文字]^(ルビ){#id .class1 .class2 attr1=val1 attr2=val2 ...}
+         *
+         * ルビに属性値を設定しておくとCSSやjavascriptで表示制御などができて便利。
+         */
+        if (preg_match('/{((?:(?>[^{}]+)|(?R))*)}/Au', $target, $m)) {
+            $attributes = $this->parseRubyTextAttributeData($m[1]);
+            $extent     = strlen($m[0]);
+            return true;
+        }
+
+        return false;
+    }
+
+    protected function createRubyTextElement($kanji, $furigana, $attributes)
     {
         $ruby = array();
 
         // 熟語へのモノルビ指定に対応するため親文字とルビのペアを複数指定可能にする
         foreach ($this->parseRubyText($kanji, $furigana) as $pair) {
-            $ruby[] = array(
+            $item = array(
                 'base' => $pair[0],
                 'rt'   => array(
                     'name'    => 'rt',
@@ -181,6 +211,22 @@ trait RubyTextTrait
                     'text'    => $pair[1],
                 ),
             );
+
+            if (strlen($this->getRubyTextOpeningBracket())) {
+                $item['rp_opening'] = array(
+                    'name'    => 'rp',
+                    'text'    => $this->getRubyTextOpeningBracket(),
+                );
+            }
+
+            if (strlen($this->getRubyTextClosingBracket())) {
+                $item['rp_closing'] = array(
+                    'name'    => 'rp',
+                    'text'    => $this->getRubyTextClosingBracket(),
+                );
+            }
+
+            $ruby[] = $item;
         }
 
         return array(
@@ -189,6 +235,7 @@ trait RubyTextTrait
             'text'    => array(
                 'ruby' => $ruby,
             ),
+            'attributes' => $attributes,
         );
     }
 
@@ -226,6 +273,45 @@ trait RubyTextTrait
         return explode($s, $furigana);
     }
 
+    /*
+     * return array(
+     *   'id'         => 'id',
+     *   'class'      => 'class1 class2 ...',
+     *   'attr-name1' => 'attr-value1',
+     *   'attr-name2' => 'attr-value2',
+     *   ...
+     * );
+     */
+    protected function parseRubyTextAttributeData($attributeString)
+    {
+        $attributes = array('id' => null, 'class' => null);
+
+        foreach (preg_split('/\s+/', $attributeString, -1, PREG_SPLIT_NO_EMPTY) as $item) {
+            if ($item[0] == '#') {
+                // #id
+                $attributes['id'] = substr($item, 1);
+            } elseif ($item[0] == '.') {
+                // .class
+                $attributes['class'] .= ' ' . substr($item, 1);
+            } else {
+                // attr=val or attr
+                $a = explode('=', $item, 2);
+
+                if (isset($a[1])) {
+                    $attributes[$a[0]] = $a[1];
+                } else {
+                    $attributes[$a[0]] = $a[0];
+                }
+            }
+        }
+
+        if (isset($attributes['class'])) {
+            $attributes['class'] = ltrim($attributes['class']);
+        }
+
+        return $attributes;
+    }
+
     // handler
     protected function ruby_element(array $Element)
     {
@@ -240,10 +326,17 @@ trait RubyTextTrait
          *   </ruby> -- これはelement()が後で付与する
          */
         foreach ($Element['ruby'] as $ruby) {
-            $markup .= $this->line($ruby['base']) .
-                       '<rp>' . $this->getRubyTextOpeningBracket() . '</rp>' .
-                       $this->element($ruby['rt']) .
-                       '<rp>' . $this->getRubyTextClosingBracket() . '</rp>';
+            $markup .= $this->line($ruby['base']);
+
+            if (isset($ruby['rp_opening'])) {
+                $markup .= $this->element($ruby['rp_opening']);
+            }
+
+            $markup .= $this->element($ruby['rt']);
+
+            if (isset($ruby['rp_closing'])) {
+                $markup .= $this->element($ruby['rp_closing']);
+            }
         }
 
         return $markup;
