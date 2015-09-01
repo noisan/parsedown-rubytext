@@ -26,6 +26,21 @@ trait RubyTextTestTrait
     }
 
     /** @test */
+    public function rpタグを出力しない_rp用の括弧をなしに設定()
+    {
+        $markdown = '[括弧省略]^(かっこしょうりゃく)';
+        $expected = '<ruby>括弧省略<rt>かっこしょうりゃく</rt></ruby>';
+
+        /* スタイルシートで括弧を変更できるようにする場合や(rt:before, rt:after)
+         * <rt>のフォントサイズや色を変更して見た目を区別する場合は
+         * <rp>が邪魔になるので削除する
+         */
+        $this->parsedown->setRubyTextBrackets(null, null);
+
+        $this->assertEquals($expected, $this->parsedown->line($markdown));
+    }
+
+    /** @test */
     public function 指定文字列でルビを分割する_モノルビ用の分割記号を変更()
     {
         $markdown = '[東京都]^(とう/きょう/と)';
