@@ -328,6 +328,14 @@ trait RubyTextTrait
         foreach ($Element['ruby'] as $ruby) {
             $markup .= $this->line($ruby['base']);
 
+            if (!strlen($ruby['rt']['text'])) {
+                /* [振り仮名]^(ふ  が な) のようにルビの一部を省略しても
+                 * 親文字との対応がズレないように空の<rt>を置く
+                 */
+                $markup .= $this->element($ruby['rt']);
+                continue;
+            }
+
             if (isset($ruby['rp_opening'])) {
                 $markup .= $this->element($ruby['rp_opening']);
             }
