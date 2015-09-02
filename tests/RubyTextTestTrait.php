@@ -62,6 +62,50 @@ trait RubyTextTestTrait
         $this->assertEquals($expected, $this->parsedown->line($markdown));
     }
 
+    /**
+     * @test
+     * @dataProvider getSuteganaPatterns
+     */
+    public function ルビの中の捨て仮名を並字に変換する_捨て仮名を自動変換に設定($from, $to)
+    {
+        // ルビの内側だけが変換対象
+        $markdown = sprintf('%1$s[%1$s]^(%1$s)%1$s', $from);
+        $expected = sprintf('%1$s<ruby>%1$s<rp>（</rp><rt>%2$s</rt><rp>）</rp></ruby>%1$s', $from, $to);
+
+        $this->parsedown->setRubyTextSuteganaAllowed(false);
+
+        $this->assertEquals($expected, $this->parsedown->line($markdown));
+    }
+
+    public function getSuteganaPatterns()
+    {
+        return array(
+            array('きゅうよう',  'きゆうよう'),
+            array('ウィキ',      'ウイキ'),
+            array('ほ っ と',    'ほ つ と'),
+
+            array('ぁぃぅぇぉぁぃぅぇぉ', 'あいうえおあいうえお'),
+            array('ァィゥェォァィゥェォ', 'アイウエオアイウエオ'),
+            array('っゃゅょゎっゃゅょゎ', 'つやゆよわつやゆよわ'),
+            array('ヵヶッヮヵヶッヮ',     'カケツワカケツワ'),
+        );
+    }
+
+    /** @test */
+    public function モノルビの捨て仮名を並字に変換する_捨て仮名を自動変換に設定してルビを分かち書き()
+    {
+        $markdown = '[救急車]^(きゅう きゅう しゃ)';
+        $expected = '<ruby>' .
+                      '救<rp>（</rp><rt>きゆう</rt><rp>）</rp>' .
+                      '急<rp>（</rp><rt>きゆう</rt><rp>）</rp>' .
+                      '車<rp>（</rp><rt>しや</rt><rp>）</rp>' .
+                    '</ruby>';
+
+        $this->parsedown->setRubyTextSuteganaAllowed(false);
+
+        $this->assertEquals($expected, $this->parsedown->line($markdown));
+    }
+
     public function setUp()
     {
         $this->parsedown = $this->initParsedown();

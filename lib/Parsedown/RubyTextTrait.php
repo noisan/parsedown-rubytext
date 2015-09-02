@@ -82,6 +82,8 @@ trait RubyTextTrait
 
     private $ruby_text_MonoRubySeparator = ' ';
 
+    private $ruby_text_SuteganaAllowed     = true;
+
     private $ruby_text_ExtensionEnabled    = true;
     private $ruby_text_ExtensionRegistered = false;
 
@@ -255,8 +257,10 @@ trait RubyTextTrait
             /* ルビ分割数と親文字数が異なるならモノルビを
              * 意図した分かち書きではない可能性が高い。分割せずそのまま返す
              */
-            return array(array($kanji, $furigana));
+            return array(array($kanji, $this->normalizeRubyTextSutegana($furigana)));
         }
+
+        $rubiList = array_map(array($this, 'normalizeRubyTextSutegana'), $rubiList);
 
         // ルビの分割数と親文字数が一致すれば各要素を対応付ける
         return array_map(null, preg_split('//u', $kanji, -1, PREG_SPLIT_NO_EMPTY), $rubiList);
@@ -271,6 +275,36 @@ trait RubyTextTrait
         }
 
         return explode($s, $furigana);
+    }
+
+    /*
+     * 捨て仮名自動変換モードではルビに含まれる小書き文字を並字に変換する。
+     *
+     * ルビは小さいフォントで表示されるので印刷媒体などの慣例では
+     * 読みやすさの観点からルビに小書き文字(ex. 'ぁ')を使わず
+     * 並字(ex. 'あ')を使う傾向にある。
+     * (例: 東京都 => "とうきようと", 百科事典 => "ひやつかじてん")
+     *
+     * HTMLを印刷目的で利用するためにこの慣例に従う場合でも
+     * 自動変換モードに設定しておくことでMarkdown側では普通に
+     * 小字を使って入力しておくことが可能になる。
+     *
+     * デフォルトは捨て仮名許可モードであり何も変換しない。
+     * 捨て仮名自動変換モードは以下で設定する:
+     *
+     *     $this->setRubyTextSuteganaAllowed(false);
+     *
+     * 注意:
+     * このメソッドは自動変換モードであればルビが<code>ブロック
+     * として書かれていても小書き文字をすべて強制的に変換する。
+     */
+    protected function normalizeRubyTextSutegana($furigana)
+    {
+        if ($this->isRubyTextSuteganaAllowed()) {
+            return $furigana;
+        }
+
+        return str_replace($this->ruby_text_Sutegana['from'], $this->ruby_text_Sutegana['to'], $furigana);
     }
 
     /*
@@ -395,6 +429,17 @@ trait RubyTextTrait
         return $this;
     }
 
+    public function setRubyTextSuteganaAllowed($bool)
+    {
+        $this->ruby_text_SuteganaAllowed = $bool;
+        return $this;
+    }
+
+    public function isRubyTextSuteganaAllowed()
+    {
+        return $this->ruby_text_SuteganaAllowed;
+    }
+
     public function setRubyTextEnabled($bool)
     {
         $this->ruby_text_ExtensionEnabled = $bool;
@@ -408,4 +453,11 @@ trait RubyTextTrait
 
     abstract public function line($text);
     abstract protected function element(array $Element);
+
+    protected $ruby_text_Sutegana = array(
+        // 小書き文字をfromに、並字をtoに置く。ペアの要素順は合わせること
+        'from' => array('ぁ', 'ぃ', 'ぅ', 'ぇ', 'ぉ', 'っ', 'ゃ', 'ゅ', 'ょ', 'ゎ', 'ァ', 'ィ', 'ゥ', 'ェ', 'ォ', 'ヵ', 'ヶ', 'ッ', 'ャ', 'ュ', 'ョ', 'ヮ'),
+        'to'   => array('あ', 'い', 'う', 'え', 'お', 'つ', 'や', 'ゆ', 'よ', 'わ', 'ア', 'イ', 'ウ', 'エ', 'オ', 'カ', 'ケ', 'ツ', 'ヤ', 'ユ', 'ヨ', 'ワ'),
+        // 小さいクなどは文字化けしてしまった
+    );
 }
