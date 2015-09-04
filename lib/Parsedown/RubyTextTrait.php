@@ -117,7 +117,7 @@ trait RubyTextTrait
 
         return array(
             'extent'  => $extent,
-            'element' => $this->buildRubyTextElement($kanji, $furigana, $attributes),
+            'element' => $this->{$this->getRubyTextElementBuilderName()}($kanji, $furigana, $attributes, $Excerpt, $extent),
         );
     }
 
@@ -384,6 +384,18 @@ trait RubyTextTrait
         return $markup;
     }
 
+    protected function getRubyTextElementBuilderName()
+    {
+        return $this->ruby_text_ElementBuilderName;
+    }
+
+    protected function setRubyTextElementBuilderName($name)
+    {
+        $old = $this->ruby_text_ElementBuilderName;
+        $this->ruby_text_ElementBuilderName = $name;
+        return $old;
+    }
+
     public function getRubyTextOpeningBracket()
     {
         return $this->ruby_text_OpeningBracket;
@@ -453,6 +465,8 @@ trait RubyTextTrait
 
     abstract public function line($text);
     abstract protected function element(array $Element);
+
+    protected $ruby_text_ElementBuilderName = 'buildRubyTextElement';
 
     protected $ruby_text_Sutegana = array(
         // 小書き文字をfromに、並字をtoに置く。ペアの要素順は合わせること
