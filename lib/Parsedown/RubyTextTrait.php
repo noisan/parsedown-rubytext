@@ -117,7 +117,7 @@ trait RubyTextTrait
 
         return array(
             'extent'  => $extent,
-            'element' => $this->createRubyTextElement($kanji, $furigana, $attributes),
+            'element' => $this->buildRubyTextElement($kanji, $furigana, $attributes),
         );
     }
 
@@ -199,7 +199,7 @@ trait RubyTextTrait
         return false;
     }
 
-    protected function createRubyTextElement($kanji, $furigana, $attributes)
+    protected function buildRubyTextElement($kanji, $furigana, $attributes)
     {
         $ruby = array();
 
