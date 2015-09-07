@@ -7,6 +7,7 @@ use ParsedownExtraTest;
 class ParsedownExtraRubyTextTest extends ParsedownExtraTest
 {
     use RubyTextTestTrait;
+    use RubyTextDefinitionTestTrait;
 
     protected function initParsedown()
     {

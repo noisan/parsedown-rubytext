@@ -111,5 +111,10 @@ trait RubyTextTestTrait
         $this->parsedown = $this->initParsedown();
     }
 
+    protected function getParsedown()
+    {
+        return $this->parsedown;
+    }
+
     protected $parsedown;
 }

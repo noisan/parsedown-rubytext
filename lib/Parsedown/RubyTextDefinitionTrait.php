@@ -49,6 +49,8 @@ namespace Noi\Parsedown;
  */
 trait RubyTextDefinitionTrait
 {
+    private $ruby_text_definition_MarkupAll = true;
+
     private $ruby_text_definition_ExtensionEnabled    = true;
     private $ruby_text_definition_ExtensionRegistered = false;
 
@@ -178,7 +180,12 @@ trait RubyTextDefinitionTrait
         return null;
     }
 
-    protected function buildRubyTextElementWrapper($kanji, $furigana, $attributes)
+    protected function removeRubyTextDefinition($kanji)
+    {
+        unset($this->DefinitionData['RubyTextDefinition'][$kanji[0]][$kanji]);
+    }
+
+    protected function buildRubyTextElementWrapper($kanji, $furigana, $attributes, $Excerpt = null)
     {
         if (($furigana === '') and ($defined = $this->lookupRubyTextDefinition($kanji))) {
             // 空ルビのふりがなと属性値を補完する
@@ -188,16 +195,42 @@ trait RubyTextDefinitionTrait
             if ($attributes === null) {
                 $attributes = $defined[1];
             }
+
+            // MarkupFirstモードでは空ルビを補完してはならない条件がある
+            if (!$this->isRubyTextDefinitionMarkupAll() and isset($Excerpt)) {
+                /* inlineRubyText()で処理中の行の「空ルビより前の位置」には
+                 * 自動ルビ振り対象の$kanjiが平文で存在しているケースがある。
+                 * (例: "平文...漢字...[漢字]^()")
+                 *
+                 * MarkupFirstモードの場合、このような状況で空ルビは補完してはならない。
+                 * 実際に初出の可能性があるのは平文側の$kanjiになる。
+                 *
+                 * Parsedownはinline系メソッドを先に実行して、その後で残った
+                 * 平文をunmarkedText()に渡すため、こういう状況も発生する。
+                 */
+                $left = substr($Excerpt['context'], 0, -strlen($Excerpt['text']));
+                if (mb_strpos($left, $kanji, 0, 'UTF-8') !== false) {
+                    // この空ルビは$kanjiの初出ではない: 補完したふりがなを消す
+                    $furigana = '';
+                }
+            }
         }
 
         $Element = $this->{$this->ruby_text_definition_ElementBuilderName}($kanji, $furigana, $attributes);
+        $Element['text']['base']    = $kanji;
         $Element['text']['handler'] = $Element['handler'];
-        $Element['handler'] = 'ruby_element_wrapper';
+        $Element['handler']         = 'ruby_element_wrapper';
         return $Element;
     }
 
     protected function ruby_element_wrapper($Element)
     {
+        // MarkupFirstモードでは一度ルビ振りした親文字を除外しておく
+        if (!$this->isRubyTextDefinitionMarkupAll() and ($this->getRubyTextDefinitionNestCount() == 0)) {
+            // ネストLv0に置かれた単語だけを使用済みとして扱う
+            $this->removeRubyTextDefinition($Element['base']);
+        }
+
         /* ルビのネストレベルを計測する:
          *   ここはLv0 [ここはLv1]^(ここもLv1[ここはLv2]^(ここもLv2)こっちはLv1) ここはLv0
          *
@@ -227,8 +260,9 @@ trait RubyTextDefinitionTrait
     // override
     protected function unmarkedText($text)
     {
-        /* 以下を実行した時点で親クラスによってmarkupされている可能性がある。
+        /* 以下を実行すると$textは親クラスによってmarkupされる可能性がある。
          * 例えばParsedownExtraを継承していると "Abbreviations" のタグが付く。
+         * つまりHTMLタグを含む前提で以降の処理をしなければならない。
          */
         $text = parent::unmarkedText($text);
 
@@ -259,7 +293,9 @@ trait RubyTextDefinitionTrait
      */
     protected function unmarkedRubyText($text)
     {
-        // ルビはタグの外側を対象とする。属性値を対象にしてはダメ
+        /* 自動ルビ振り対象はタグの外側の文字列(属性値にルビを振らない)。
+         * (例: "ルビ対象(OK)<tag attr="対象外(NG)">ルビ対象(OK)</tag>ルビ対象(OK)...")
+         */
         return preg_replace_callback('/((?:\G|>))([^<]+)/u', array($this, 'replaceUnmarkedRubyTextCallback'), $text);
     }
 
@@ -301,6 +337,39 @@ trait RubyTextDefinitionTrait
         }
 
         return $replaced;
+    }
+
+    /**
+     * 自動ルビ振り機能の処理モードを変更する。
+     *
+     * このメソッドは引数($bool)の値に応じて自動ルビ振りの
+     * 振る舞いを以下のどちらかに切り替える:
+     *
+     *   1. `true`:  MarkupAll   mode
+     *   2. `false`: MarkupFirst mode
+     *
+     * trueに設定すると "MarkupAll mode" となり、
+     * 文書内のルビ振り対象単語すべてにルビを振る。
+     * これがデフォルトの動作。
+     *
+     * falseに設定すると "MarkupFirst mode" となり、
+     * 各単語は文書内で初出の箇所だけルビが振られるようになる。
+     * (Java String.replaceFirst() のように初回の1つだけ)
+     * HTMLがルビだらけになると可読性が下がることもあるので
+     * ルビを最初の1回だけに制限したい場合はこのモードを選ぶ。
+     *
+     * ただし、inlineルビで明示的にふりがなを指定した箇所は
+     * モードに関係なく常にルビを振る。
+     */
+    public function setRubyTextDefinitionMarkupAll($bool)
+    {
+        $this->ruby_text_definition_MarkupAll = $bool;
+        return $this;
+    }
+
+    public function isRubyTextDefinitionMarkupAll()
+    {
+        return $this->ruby_text_definition_MarkupAll;
     }
 
     public function setRubyTextDefinitionEnabled($bool)
