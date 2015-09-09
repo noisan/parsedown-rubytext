@@ -28,18 +28,20 @@ trait CustomElementBuilderTestTrait
     }
 
     /** @test */
-    public function 独自ハンドラに処理中の行と処理済みの長さ情報を渡す()
+    public function 独自ハンドラに処理中の文字列と開始オフセットと処理済みの長さ情報を渡す()
     {
-        $markdown        = 'TEST[確認]^(かくにん)test';
-        $expectedExcerpt = array('context' => 'TEST[確認]^(かくにん)test', 'text' => '[確認]^(かくにん)test');
-        $expectedExtent  = strlen('[確認]^(かくにん)');
+        $markdown         = 'TEST[確認]^(かくにん)test';
+        $expectedContext  = 'TEST[確認]^(かくにん)test';
+        $expectedPosition = 4;
+        $expectedExtent   = strlen('[確認]^(かくにん)');
 
         $this->parsedown->registerMyElementBuilder();
         $this->parsedown->line($markdown);
 
         // 追加引数の確認
-        $this->assertEquals($expectedExcerpt, $this->parsedown->Excerpt);
-        $this->assertEquals($expectedExtent,  $this->parsedown->extent);
+        $this->assertEquals($expectedContext,  $this->parsedown->context);
+        $this->assertEquals($expectedPosition, $this->parsedown->position);
+        $this->assertEquals($expectedExtent,   $this->parsedown->extent);
     }
 
     abstract public function initParsedown();
@@ -57,18 +59,20 @@ trait MyElementBuilderTrait
     private $orig_handler;
     private $table;
 
-    public $Excerpt;
+    public $context;
+    public $position;
     public $extent;
 
     // 独自のElementBuilderの例: 登録済みルビを置換するハンドラ
-    protected function my_handler($kanji, $furigana, $attributes, $Excerpt, $extent)
+    protected function my_handler($kanji, $furigana, $attributes, $context, $position, $extent)
     {
         if (isset($this->table[$kanji])) {
             $furigana = $this->table[$kanji];
         }
 
-        $this->Excerpt = $Excerpt;
-        $this->extent  = $extent;
+        $this->context  = $context;
+        $this->position = $position;
+        $this->extent   = $extent;
 
         return $this->{$this->orig_handler}($kanji, $furigana, $attributes);
     }

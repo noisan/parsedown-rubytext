@@ -115,9 +115,11 @@ trait RubyTextTrait
             $extent += $additional;
         }
 
+        $position = strlen($Excerpt['context']) - strlen($Excerpt['text']);
+
         return array(
             'extent'  => $extent,
-            'element' => $this->buildRubyTextElement($kanji, $furigana, $attributes, $Excerpt, $extent),
+            'element' => $this->buildRubyTextElement($kanji, $furigana, $attributes, $Excerpt['context'], $position, $extent),
         );
     }
 
@@ -199,9 +201,9 @@ trait RubyTextTrait
         return false;
     }
 
-    protected function buildRubyTextElement($kanji, $furigana, $attributes = null, $Excerpt = null, $extent = null)
+    protected function buildRubyTextElement($kanji, $furigana, $attributes = null, $context = null, $position = null, $extent = null)
     {
-        return $this->{$this->getRubyTextElementBuilderName()}($kanji, $furigana, $attributes, $Excerpt, $extent);
+        return $this->{$this->getRubyTextElementBuilderName()}($kanji, $furigana, $attributes, $context, $position, $extent);
     }
 
     protected function buildRubyTextElementCallback($kanji, $furigana, $attributes)

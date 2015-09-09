@@ -185,7 +185,7 @@ trait RubyTextDefinitionTrait
         unset($this->DefinitionData['RubyTextDefinition'][$kanji[0]][$kanji]);
     }
 
-    protected function buildRubyTextElementWrapper($kanji, $furigana, $attributes = null, $Excerpt = null, $extent = null)
+    protected function buildRubyTextElementWrapper($kanji, $furigana, $attributes = null, $context = null, $position = null, $extent = null)
     {
         if (($furigana === '') and ($defined = $this->lookupRubyTextDefinition($kanji))) {
             // 空ルビのふりがなと属性値を補完する
@@ -197,7 +197,7 @@ trait RubyTextDefinitionTrait
             }
 
             // MarkupFirstモードでは空ルビを補完してはならない条件がある
-            if (!$this->isRubyTextDefinitionMarkupAll() and isset($Excerpt)) {
+            if (!$this->isRubyTextDefinitionMarkupAll() and isset($context) and isset($position)) {
                 /* inlineRubyText()で処理中の行の「空ルビより前の位置」には
                  * 自動ルビ振り対象の$kanjiが平文で存在しているケースがある。
                  * (例: "平文...漢字...[漢字]^()")
@@ -208,7 +208,7 @@ trait RubyTextDefinitionTrait
                  * Parsedownはinline系メソッドを先に実行して、その後で残った
                  * 平文をunmarkedText()に渡すため、こういう状況も発生する。
                  */
-                $left = substr($Excerpt['context'], 0, -strlen($Excerpt['text']));
+                $left = substr($context, 0, -$position);
                 if (mb_strpos($left, $kanji, 0, 'UTF-8') !== false) {
                     // この空ルビは$kanjiの初出ではない: 補完したふりがなを消す
                     $furigana = '';
@@ -216,7 +216,7 @@ trait RubyTextDefinitionTrait
             }
         }
 
-        $Element = $this->{$this->ruby_text_definition_ElementBuilderName}($kanji, $furigana, $attributes, $Excerpt, $extent);
+        $Element = $this->{$this->ruby_text_definition_ElementBuilderName}($kanji, $furigana, $attributes, $context, $position, $extent);
         $Element['text']['base']    = $kanji;
         $Element['text']['handler'] = $Element['handler'];
         $Element['handler']         = 'ruby_element_wrapper';
@@ -383,7 +383,7 @@ trait RubyTextDefinitionTrait
     }
 
     abstract protected function setRubyTextElementBuilderName($name);
-    abstract protected function buildRubyTextElement($kanji, $furigana, $attributes = null, $Excerpt = null, $extent = null);
+    abstract protected function buildRubyTextElement($kanji, $furigana, $attributes = null, $context = null, $position = null, $extent = null);
     abstract protected function parseRubyTextAttributeData($attributeString);
 
     protected $ruby_text_definition_ElementBuilderName;
