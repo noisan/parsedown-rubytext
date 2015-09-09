@@ -185,7 +185,7 @@ trait RubyTextDefinitionTrait
         unset($this->DefinitionData['RubyTextDefinition'][$kanji[0]][$kanji]);
     }
 
-    protected function buildRubyTextElementWrapper($kanji, $furigana, $attributes, $Excerpt = null)
+    protected function buildRubyTextElementWrapper($kanji, $furigana, $attributes = null, $Excerpt = null, $extent = null)
     {
         if (($furigana === '') and ($defined = $this->lookupRubyTextDefinition($kanji))) {
             // 空ルビのふりがなと属性値を補完する
@@ -216,7 +216,7 @@ trait RubyTextDefinitionTrait
             }
         }
 
-        $Element = $this->{$this->ruby_text_definition_ElementBuilderName}($kanji, $furigana, $attributes);
+        $Element = $this->{$this->ruby_text_definition_ElementBuilderName}($kanji, $furigana, $attributes, $Excerpt, $extent);
         $Element['text']['base']    = $kanji;
         $Element['text']['handler'] = $Element['handler'];
         $Element['handler']         = 'ruby_element_wrapper';
@@ -323,8 +323,7 @@ trait RubyTextDefinitionTrait
                 foreach ($this->DefinitionData['RubyTextDefinition'][$marker] as $kanji => $defined) {
                     if (substr_compare($text, $kanji, $i, $defined[2]) === 0) {
                         // ルビを振る
-                        $replaced .= $this->element(
-                                $this->{$this->getRubyTextElementBuilderName()}($kanji, $defined[0], $defined[1]));
+                        $replaced .= $this->element($this->buildRubyTextElement($kanji, $defined[0], $defined[1]));
 
                         $i += $defined[2];
                         continue 2;
@@ -384,7 +383,7 @@ trait RubyTextDefinitionTrait
     }
 
     abstract protected function setRubyTextElementBuilderName($name);
-    abstract protected function getRubyTextElementBuilderName();
+    abstract protected function buildRubyTextElement($kanji, $furigana, $attributes = null, $Excerpt = null, $extent = null);
     abstract protected function parseRubyTextAttributeData($attributeString);
 
     protected $ruby_text_definition_ElementBuilderName;
