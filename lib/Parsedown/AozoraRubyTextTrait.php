@@ -348,10 +348,15 @@ trait AozoraRubyTextTrait
         }
 
         // 親文字が切り出せた。ふりがなも確定
-        $furigana   = $m[1];
-        $extent    += strlen($m[0]);
+        $furigana        = $m[1];
+        $furigana_extent = strlen($m[0]);
+        $extent         += $furigana_extent;
 
-        $attributes = null;  //[TODO]: 実装する
+        // 属性値があれば切り出す
+        if (preg_match('/{((?:(?>[^{}]+)|(?R))*)}/Au', $text, $a, 0, $offset + $furigana_extent)) {
+            $attributes = $this->parseRubyTextAttributeData($a[1]);
+            $extent    += strlen($a[0]);
+        }
 
         return true;
     }
@@ -579,6 +584,7 @@ trait AozoraRubyTextTrait
     }
 
     abstract protected function buildRubyTextElement($kanji, $furigana, $attributes = null, $context = null, $position = null, $extent = null);
+    abstract protected function parseRubyTextAttributeData($attributeString);
 
     /*
      * 親文字切り出し用の正規表現リスト
