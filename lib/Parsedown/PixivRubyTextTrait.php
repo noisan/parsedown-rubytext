@@ -158,7 +158,7 @@ trait PixivRubyTextTrait
          * 属性値指定はPixivルビ形式の公式仕様ではなく
          * このExtensionの独自仕様。
          */
-        if ($this->matchRubyTextAttributes(substr($Excerpt['text'], $extent), $attributes, $additional)) {
+        if ($this->matchRubyTextAttributes($Excerpt['text'], $extent, $attributes, $additional)) {
             $extent += $additional;
         }
 
@@ -207,7 +207,7 @@ trait PixivRubyTextTrait
         return $this->pixiv_ruby_text_ExtensionEnabled;
     }
 
-    abstract protected function matchRubyTextAttributes($target, /* out */ &$attributes, /* out */ &$extent);
+    abstract protected function matchRubyTextAttributes($target, $offset, /* out */ &$attributes, /* out */ &$extent);
     abstract protected function parseRubyTextAttributeData($attributeString);
     abstract protected function buildRubyTextElement($kanji, $furigana, $attributes = null, $context = null, $position = null, $extent = null);
 }

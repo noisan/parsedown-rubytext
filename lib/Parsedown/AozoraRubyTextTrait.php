@@ -229,8 +229,22 @@ trait AozoraRubyTextTrait
         $offset = max(0, $diff_len - 2);
 
         // Markdown書式チェック
-        if (!$this->matchAozoraRubyTextMarkdown($Excerpt['context'], $offset, $kanji, $furigana, $attributes, $position, $extent)) {
+        if (!$this->matchAozoraRubyTextMarkdown($Excerpt['context'], $offset, $kanji, $furigana, $position, $extent)) {
             return ($this->isAozoraRubyTextLast('AozoraRubyText')) ? $this->buildAozoraRubyTextContext($Excerpt) : null;
+        }
+
+        /*
+         * 追加の属性値があれば切り出す。
+         *
+         * 属性値は閉じ括弧の直後に "{...}" の形式で指定する:
+         *
+         *     親文字《ふりがな》{#id .class lang=ja}
+         *
+         * 属性値指定は青空文庫ルビ形式の公式仕様ではなく
+         * このExtensionの独自仕様。
+         */
+        if ($this->matchRubyTextAttributes($Excerpt['context'], $position + $extent, $attributes, $additional)) {
+            $extent += $additional;
         }
 
         return array(
@@ -328,7 +342,6 @@ trait AozoraRubyTextTrait
         $offset,
         /* out */ &$kanji,
         /* out */ &$furigana,
-        /* out */ &$attributes,
         /* out */ &$position,
         /* out */ &$extent
     ) {
@@ -348,16 +361,8 @@ trait AozoraRubyTextTrait
         }
 
         // 親文字が切り出せた。ふりがなも確定
-        $furigana        = $m[1];
-        $furigana_extent = strlen($m[0]);
-        $extent         += $furigana_extent;
-
-        // 属性値があれば切り出す
-        if (preg_match('/{((?:(?>[^{}]+)|(?R))*)}/Au', $text, $a, 0, $offset + $furigana_extent)) {
-            $attributes = $this->parseRubyTextAttributeData($a[1]);
-            $extent    += strlen($a[0]);
-        }
-
+        $furigana = $m[1];
+        $extent  += strlen($m[0]);
         return true;
     }
 
@@ -585,6 +590,7 @@ trait AozoraRubyTextTrait
 
     abstract protected function buildRubyTextElement($kanji, $furigana, $attributes = null, $context = null, $position = null, $extent = null);
     abstract protected function parseRubyTextAttributeData($attributeString);
+    abstract protected function matchRubyTextAttributes($target, $offset, /* out */ &$attributes, /* out */ &$extent);
 
     /*
      * 親文字切り出し用の正規表現リスト

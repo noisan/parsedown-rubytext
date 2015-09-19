@@ -111,7 +111,7 @@ trait RubyTextTrait
             return;
         }
 
-        if ($this->matchRubyTextAttributes(substr($Excerpt['text'], $extent), $attributes, $additional)) {
+        if ($this->matchRubyTextAttributes($Excerpt['text'], $extent, $attributes, $additional)) {
             $extent += $additional;
         }
 
@@ -185,14 +185,41 @@ trait RubyTextTrait
         return false;
     }
 
-    protected function matchRubyTextAttributes($target, /* out */ &$attributes, /* out */ &$extent)
+    /*
+     * 属性値の指定があるか調べて切り出す。
+     *
+     * 文字列$targetの$offset位置に属性値が指定されていれば
+     * 戻り値にtrueを返す。なければfalseを返す。
+     *
+     * 属性値がある場合は切り出して$attributes出力引数に渡す。
+     * また、$offset以降で消費した文字列の長さを$extent出力引数に渡す。
+     *
+     * ルビに属性値を設定するとCSSやjavascriptで表示制御などが可能になり便利。
+     *
+     * このメソッドはデフォルトで$targetの$offset直後から
+     * 属性値の記述 "{...}" が始まると想定して処理する。
+     * ($offset位置以降の空白を考慮しない)
+     *
+     * この振る舞いは MarkdownExtra や ParsedownExtra の
+     * "Special Attributes" 処理仕様と異なる。
+     * これらのクラスはそれぞれ以下のように空白を許可する:
+     *
+     *  * MarkdownExtra:  属性値の前に1つまで空白を許す。
+     *  * ParsedownExtra: 属性値の前に複数の空白を許す。
+     *
+     * 正しい仕様はわからなかった。
+     * そのため、このメソッドは誤作動防止のため
+     * 今のところ空白を1つも許可しないことにしておく。
+     */
+    protected function matchRubyTextAttributes($target, $offset, /* out */ &$attributes, /* out */ &$extent)
     {
         /* ルビには属性値を追加設定できる:
          *   [親文字]^(ルビ){#id .class1 .class2 attr1=val1 attr2=val2 ...}
          *
-         * ルビに属性値を設定しておくとCSSやjavascriptで表示制御などができて便利。
+         * $offsetは ")" の直後の位置を示している。
+         * そこからの位置に "{...}" があれば属性値の指定とみなす。
          */
-        if (preg_match('/{((?:(?>[^{}]+)|(?R))*)}/Au', $target, $m)) {
+        if (preg_match('/{((?:(?>[^{}]+)|(?R))*)}/Au', $target, $m, 0, $offset)) {
             $attributes = $this->parseRubyTextAttributeData($m[1]);
             $extent     = strlen($m[0]);
             return true;
