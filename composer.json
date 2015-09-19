@@ -1,7 +1,7 @@
 {
     "name": "noi/parsedown-rubytext",
     "description": "An extension of Parsedown that adds support for ruby text (aka furigana) in Markdown.",
-    "keywords": ["library", "parser", "markdown", "parsedown", "ruby", "rubi", "furigana"],
+    "keywords": ["library", "parser", "markdown", "parsedown", "extension", "ruby", "rubi", "furigana", "aozora bunko"],
     "type": "library",
     "license": "MIT",
     "authors": [
