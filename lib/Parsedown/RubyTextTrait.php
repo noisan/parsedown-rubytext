@@ -497,7 +497,7 @@ trait RubyTextTrait
         return $this->ruby_text_ExtensionEnabled;
     }
 
-    abstract public function line($text);
+    abstract public function line($text, $nonNestables=array());
     abstract protected function element(array $Element);
 
     protected $ruby_text_ElementBuilderName = 'buildRubyTextElementCallback';
