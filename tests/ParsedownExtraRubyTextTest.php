@@ -15,4 +15,13 @@ class ParsedownExtraRubyTextTest extends ParsedownExtraTest
 
         return $Parsedown;
     }
+
+    /**
+     * @runInSeparateProcess
+     * @requires function ParsedownExtraTest::testLateStaticBinding
+     */
+    public function testLateStaticBinding()
+    {
+        return parent::testLateStaticBinding();
+    }
 }
