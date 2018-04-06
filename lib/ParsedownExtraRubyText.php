@@ -29,4 +29,9 @@ class ParsedownExtraRubyText extends ParsedownExtra
         $this->registerRubyTextExtension();
         $this->registerRubyTextDefinitionExtension();
     }
+
+    public function line($text, $nonNestables = array())
+    {
+        return parent::line($text, $nonNestables);
+    }
 }

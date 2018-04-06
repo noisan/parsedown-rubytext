@@ -48,4 +48,9 @@ class ParsedownRubyText extends Parsedown
         $this->registerRubyTextExtension();
         $this->registerRubyTextDefinitionExtension();
     }
+
+    public function line($text, $nonNestables = array())
+    {
+        return parent::line($text, $nonNestables);
+    }
 }

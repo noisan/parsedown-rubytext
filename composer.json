@@ -11,7 +11,7 @@
         }
     ],
     "require": {
-        "erusev/parsedown": "1.4 - 1.6"
+        "erusev/parsedown": "~1.4"
     },
     "suggest": {
         "erusev/parsedown-extra": "*"
